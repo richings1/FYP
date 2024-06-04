@@ -1,0 +1,40 @@
+# 3R 
+
+# Create a list to contain the new ratio data 
+ratios_data = []
+
+# Iterate through each window
+for window in range(len(df_3R_0)):
+    
+    window_positions = df_3R_0['Window Positions'][window] # get the position of each window 
+    
+    lower, upper = map(int, window_positions.split('-')) # split the window into lower and upper bounds
+    midpoint = (lower + upper) // 2 # calculate the midpoint but round the value to give an integer mid-point
+    
+    # calculate the pi values in the current window for the 0-fold and 4-fold sites 
+    pi_0 = df_3R_0['pi_3R_0'][window]
+    pi_4 = df_3R_4['pi_3R_4'][window]
+    
+    # Check if pi_4 is zero to avoid division by zero
+    if pi_4 == 0:
+        
+        # add NA to the new data frame if there are no values to append 
+        ratios_data.append({'Window Number': window + 1, 'Window Positions': window_positions, 'Ratio': 'NA', 'Midpoint': midpoint})
+        continue  
+    
+    # Calculate the ratio of pi values for 0-fold to 4-fold sites
+    ratio = pi_0 / pi_4
+    
+    # Get the window number
+    window_number = df_3R_0['Window Number'][window]
+    
+    # Append the values to the new data frame 
+    ratios_data.append({'Window Number': window_number, 'Window Positions': window_positions, 'Ratio': ratio, 'Midpoint': midpoint})
+
+# Create a new data frame
+df_3R_ratios = pd.DataFrame(ratios_data)
+
+print(df_3R_ratios)
+
+with open('df_3R_ratios.pkl', 'wb') as f:
+    pickle.dump(df_3R_ratios, f)
