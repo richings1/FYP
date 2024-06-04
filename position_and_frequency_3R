@@ -1,0 +1,89 @@
+# 1. Extract the genotypes and positions from the relevant data 
+
+site_mask="gamb_colu"
+sample_query="(country == 'Mali') and (taxon == 'coluzzii') and (year == 2013 or year == 2015) and (location == 'Sokourani (Niono)')"
+
+snp_3R_int=ag3.snp_calls(region="3R", site_class="INTERGENIC", site_mask=site_mask, sample_query=sample_query)
+snp_3R_4=ag3.snp_calls(region="3R", site_class="CDS_DEG_4", site_mask=site_mask, sample_query=sample_query)
+snp_3R_0=ag3.snp_calls(region="3R", site_class="CDS_DEG_0", site_mask=site_mask, sample_query=sample_query)
+
+# 2. Find the genotypes
+
+snp_3R_int_gt=allel.GenotypeDaskArray(snp_3R_int["call_genotype"])
+snp_3R_4_gt=allel.GenotypeDaskArray(snp_3R_4["call_genotype"])
+snp_3R_0_gt=allel.GenotypeDaskArray(snp_3R_0["call_genotype"])
+
+# 3. Find the positions 
+
+snp_3R_int_pos=allel.SortedIndex(snp_3R_int["variant_position"])
+snp_3R_4_pos=allel.SortedIndex(snp_3R_4["variant_position"])
+snp_3R_0_pos=allel.SortedIndex(snp_3R_0["variant_position"])
+
+# 4. Filter out missing sites > only sites with no missing values across all samples are included 
+
+# 0-fold sites 
+
+missing=snp_3R_0_gt.is_missing()
+missing=np.any(missing, axis=1)
+complete=(missing==0)
+snp_3R_0_gt_complete=snp_3R_0_gt.compress(complete, axis=0)
+snp_3R_0_pos_complete=snp_3R_0_pos[complete]
+
+# 4-fold sites 
+
+missing=snp_3R_4_gt.is_missing()
+missing=np.any(missing, axis=1)
+complete=(missing==0)
+snp_3R_4_gt_complete=snp_3R_4_gt.compress(complete, axis=0)
+snp_3R_4_pos_complete=snp_3R_4_pos[complete]
+
+# Intergenic sites 
+
+missing=snp_3R_int_gt.is_missing()
+missing=np.any(missing, axis=1)
+complete=(missing==0)
+snp_3R_int_gt_complete=snp_3R_int_gt.compress(complete, axis=0)
+snp_3R_int_pos_complete=snp_3R_int_pos[complete]
+
+# 5. Calculate major allele frequency (p)
+
+# Count alleles 
+
+snp_3R_int_complete_ac=snp_3R_int_gt_complete.count_alleles(max_allele=3)
+snp_3R_4_complete_ac=snp_3R_4_gt_complete.count_alleles(max_allele=3)
+snp_3R_0_complete_ac=snp_3R_0_gt_complete.count_alleles(max_allele=3)
+
+# Convert counts to frequencies 
+
+snp_3R_int_complete_af=snp_3R_int_complete_ac.to_frequencies()
+snp_3R_4_complete_af=snp_3R_4_complete_ac.to_frequencies()
+snp_3R_0_complete_af=snp_3R_0_complete_ac.to_frequencies()
+
+# Exctract the largest allele frequency 
+
+snp_3R_4_complete_p=snp_3R_4_complete_af.max(axis=1).compute()
+snp_3R_0_complete_p=snp_3R_0_complete_af.max(axis=1).compute()
+snp_3R_int_complete_p=snp_3R_int_complete_af.max(axis=1).compute()
+
+# 6. Save the position and frequency data 
+
+# 0-fold sites on the 3R
+
+with open('snp_3R_0_complete_p.pkl', 'wb') as f:
+   pickle.dump(snp_3R_0_complete_p, f)
+with open('snp_3R_0_complete_pos.pkl', 'wb') as f:
+    pickle.dump(snp_3R_0_pos_complete, f)
+
+# 4-fold sites on the 3R 
+
+with open('snp_3R_4_complete_p.pkl', 'wb') as f:
+   pickle.dump(snp_3R_4_complete_p, f)
+with open('snp_3R_4_complete_pos.pkl', 'wb') as f:
+    pickle.dump(snp_3R_4_pos_complete, f)
+
+# intergenic sites on the 3R 
+
+with open('snp_3R_int_complete_p.pkl', 'wb') as f:
+   pickle.dump(snp_3R_int_complete_p, f)
+with open('snp_3R_int_complete_pos.pkl', 'wb') as f:
+    pickle.dump(snp_3R_int_pos_complete, f)
