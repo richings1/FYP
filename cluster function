@@ -1,0 +1,28 @@
+def cluster(df, lower, upper, window_len, num_windows, column):
+    # Ensure lb and ub are integers
+    df['lb'] = df['lb'].astype(int)
+    df['ub'] = df['ub'].astype(int)
+
+    means = []
+    window_numbers = []  
+    Midpoint = []
+
+    for i in range(1, num_windows + 1):  # Iterate through the number of windows
+        mid = (window_len * i) - (window_len / 2)
+        Midpoint.append(mid)
+        
+        req = df[(df['lb'] >= lower) & (df['ub'] <= upper)]
+
+        if req.empty:
+            means.append(None)
+        else:
+            mean_value = req[column].mean()
+            means.append(mean_value)
+        
+        window_numbers.append(i)  # Append window number
+        lower += window_len
+        upper += window_len
+        
+    mean_df = pd.DataFrame({'Window Number': window_numbers, 'Mean Ratio': means, 'Midpoint': Midpoint})
+
+    return mean_df
