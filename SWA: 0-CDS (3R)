@@ -1,0 +1,52 @@
+# 0-fold sites (3R)
+
+# loop through the code to perform the same analysis on each window 
+
+chromo_3R = 53200000 # determine the length to iterate over 
+window_size = 10000 # determine the size of the window for the analysis
+
+lower = 1 # set the starting position on the chromosome of the first window 
+upper = 10000 # set the last position on the chromosome of the first window 
+window_number = 1 # set the window number 
+
+# create some empty lists to store values in for the data frame 
+pi_values = [] 
+num_sites_values = []
+window_positions = []
+window_midpoint = []
+
+# iterate through the total length of the 3R chromosome in non-overlapping windows 
+for window in range(0, chromo_3R, window_size): 
+    
+    req_pos = (snp_3R_0_complete_pos >= lower) & (snp_3R_0_complete_pos <= upper)    
+    subset_p = snp_3R_0_complete_p[req_pos]
+    
+    num_sites = len(subset_p)
+    
+    if (num_sites) > 0:
+    
+    # calculate diversity for the window now you know there are values in the window
+        window_pi = np.sum(2 * subset_p * (1 - subset_p)) / num_sites
+        pi_values.append(window_pi)
+        num_sites_values.append(num_sites)
+    
+    else: 
+        pi_values.append(np.nan)
+        num_sites_values.append(0)
+
+    window_positions.append(f"{lower}-{upper}")
+    window_midpoint.append((lower + upper) // 2) # a floor division operator ensures the midpoint is an integer 
+    lower = lower + window_size
+    upper = upper + window_size 
+    window_number += 1
+
+data = {'Window Number': range(1, window_number),
+        'Window Positions': window_positions,
+        'pi_3R_0': pi_values,
+        'num_sites': num_sites_values,
+        'Midpoint': window_midpoint}
+
+df_3R_0 = pd.DataFrame(data)
+
+with open('df_3R_0.pkl', 'wb') as f:
+    pickle.dump(df_3R_0, f)
