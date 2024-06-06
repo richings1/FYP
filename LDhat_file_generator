@@ -1,0 +1,80 @@
+load('../data/Mali_pass_genotype_biallelic.RData')
+
+# PASTE STRINGS
+f<-function(x) {paste(x, collapse='')}
+
+##find number of windows by dividing last value by 10k
+num_windows <- ceiling((POS[8285331])/10000)
+num_windows <- seq(1, num_windows, 1)
+window_start<-1
+window_end<-10000
+window_starts <- vector("numeric", length = max(num_windows))
+window_ends <- vector("numeric", length = max(num_windows))
+wind <- 1
+for (wind in num_windows){
+  window_starts[wind] <- window_start
+  window_ends[wind] <- window_end
+  window_start <- window_start + 10000
+  window_end <- window_end + 10000
+}
+
+my_windows <- data.frame(window=num_windows, window_start=window_starts, window_end=window_ends)
+my_windows$sites_file <- character(nrow(my_windows))
+my_windows$locs_file <- character(nrow(my_windows))
+
+#reset window start and stop
+window_start <- 1
+window_end <- 10000
+for (wind in num_windows){
+  temp <-(POS>=window_start) & (POS<window_end)
+  working_POS<-POS[temp]
+  working_genotype<-genotype[,temp]
+  ####
+  y<-working_genotype
+  y[working_genotype==0]<-0
+  y[working_genotype==2]<-1
+  y[working_genotype==1]<-2
+  y[working_genotype<0]<-'?'
+  ####
+  y<-apply(y, 1, f)
+  y[1:2]
+  
+  #### subset to 96 samples 
+  sample_id = sample_id[1:96]
+  
+  #adjust working POS to start at 1 
+  adjust <- working_POS[1]-1
+  working_POS_adjust <- working_POS - adjust
+  
+  # WRITE THE site FILE
+  filename <- paste('../Pilot/input/sites_', wind, '.sites', sep = "")
+  first_line<-paste(c(length(sample_id), length(working_POS_adjust), 2), collapse=' ')
+  write(first_line, filename)
+  for (i in 1:length(sample_id))
+  {
+    write(paste(c('>', sample_id[i]), collapse=''), filename, append=T)
+    write(y[i], filename, append=T)
+  }
+  
+  #add windows info to my_windows df
+  my_windows[wind,]$window <- wind
+  my_windows[wind,]$window_start <- window_start
+  my_windows[wind,]$window_end <- window_end
+  my_windows[wind,]$sites_file <- filename
+  
+  # WRITE THE loc FILE
+  filename <- paste('../Pilot/input/locs_', wind,'.locs', sep = "")
+  first_line<-paste(length(working_POS_adjust), working_POS_adjust[(length(working_POS_adjust))]-working_POS_adjust[1]+1, 'L', collapse=' ')
+  write(first_line, filename)
+  write(paste(working_POS_adjust, collapse=' '), filename, append=T)
+  print(paste("files written for window", wind))
+  
+  #add locs filename to df
+  my_windows[wind,]$locs_file <- filename
+  
+  #increment windows
+  window_start <- window_start+10000
+  window_end <- window_end+10000
+}
+
+write.csv(my_windows, "my_windows.csv")
