@@ -1,0 +1,38 @@
+import pandas as pd
+import numpy as np
+import dask
+import dask.array as da
+import xarray as xr
+import malariagen_data
+
+# CONNECT TO THE DATABASE
+ag3 = malariagen_data.Ag3() 
+ag3
+
+# THE PARAMETERS
+site_mask="gamb_colu"
+sample_query="(country == 'Mali') and (taxon == 'coluzzii') and (year == 2013 or year == 2015) and (location == 'Sokourani (Niono)')"
+
+# METADATA, 177 MOSQUITOES CHOSEN
+metadata=ag3.sample_metadata(sample_query=sample_query)
+metadata
+
+# NO site_class TO ACCESS ALL SITES (0-FOLD, 4-FOLD, INTERGENIC, ETC)
+# JUST EXTRACT BIALLELIC SNPS (SO WE DON'T INCLUDE FIXED SITES)
+ds_snp=ag3.biallelic_snp_calls(region="3R", 
+                site_mask=site_mask, sample_query=sample_query)
+ds_snp
+
+genotype=ds_snp['call_genotype'].compute()
+POS=ds_snp['variant_position'].compute()
+sample_id=metadata['sample_id']
+sample_id=list([bytes(id, "utf-8") for id in sample_id])
+sample_id
+
+# EXPORT THE GENOTYPES AND POSITIONS TO .hd5 SO THAT I CAN HANDLE IT WITH R
+import h5py
+f=h5py.File('G:/Mali_pass_genotype_biallelic.hdf5', 'a')
+f.create_dataset(name='/POS', data=POS)
+f.create_dataset(name='/genotype',data=genotype)
+f.create_dataset(name='/sample_id', data=sample_id)
+f.close()
