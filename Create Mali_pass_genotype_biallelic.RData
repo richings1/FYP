@@ -1,0 +1,34 @@
+# LOAD THE PACKAGE AND OTHERS
+require(hdf5r)
+require(compiler)
+
+# MOUNT THE hdf5 FILE TO R, 'r' MEANS READ ONLY
+dat<-H5File$new('G:/Mali_pass_genotype_biallelic.hdf5', 'r')
+dat
+
+# EXTRACT POS
+POS<-dat[['POS']][]
+min(POS)
+max(POS)
+
+genotype1<-dat[['genotype']][1,,]
+genotype2<-dat[['genotype']][2,,]
+
+dim(genotype1)
+dim(genotype2)
+
+sum(genotype1==-1)
+sum(genotype1==0)
+sum(genotype1==1)
+sum(genotype1==2)
+
+sum(genotype1==-1 & genotype2==-1)
+sum(genotype1==-1 | genotype2==-1)
+
+# COLLAPSE OF THE PLOIDY (FROM 3D TO 2D MATRIX)
+genotype<-genotype1+genotype2
+
+sample_id<-dat[['sample_id']][]
+sample_id[1:10]
+
+save(POS, genotype, sample_id, file='Mali_pass_genotype_biallelic.RData')
