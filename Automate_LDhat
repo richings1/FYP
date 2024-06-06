@@ -1,0 +1,32 @@
+# Clear the environment
+rm(list=ls())
+
+# Load the necessary library
+library(parallel)
+
+# Define the function to run the pairwise analysis
+run_pairwise <- function(i) {
+  locs_file <- paste0("Desktop/FYP/LDhat-paper/Pilot/input/locs_", i, ".locs")
+  sites_file <- paste0("Desktop/FYP/LDhat-paper/Pilot/input/sites_", i, ".sites")
+  output_prefix <- paste0("Desktop/FYP/LDhat-paper/Pilot/output/", i)
+  ldhat_executable <- "Desktop/FYP/LDhat-paper/LDhat-master/pairwise"
+  lk_file <- "Desktop/FYP/LDhat-paper/Pilot/lk/lk_n192_t0.001"
+  
+  # Check if the necessary files exist
+  if (file.exists(locs_file) && file.exists(sites_file)) {
+    cmd <- paste(ldhat_executable, "-seq", sites_file, "-loc", locs_file, "-prefix", output_prefix, "-lk", lk_file)
+    system(cmd)
+    return(paste("Window", i, "analysed with pairwise"))
+  } else {
+    return(paste("Window", i, "error or below 200 variable site threshold, skipping.."))
+  }
+}
+
+# Detect the number of cores
+numcores <- detectCores() - 2
+
+# Apply the function in parallel
+results <- mclapply(1:100, run_pairwise, mc.cores = numcores)
+
+# Print results
+print(results)
